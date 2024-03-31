@@ -7,7 +7,7 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
         <script src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
         <link rel="stylesheet" href="style.css">
-        <script src="script.js"></script>    
+        <script src="script.js"></script>  
     </head>
     <body>
 
@@ -36,7 +36,8 @@
                                 <label for="name">Please enter your name:</label>
                                 <input type="text" class="form-control" id="name" placeholder="Enter your name" required>
                             </div>
-                            <button type="submit" class="btn btn-primary btn-block">Start Quiz</button>
+                            <button type="button" class="btn btn-primary btn-block start-quiz-btn" data-quiz-index="0">Start Quiz 1</button>
+                            <button type="button" class="btn btn-primary btn-block start-quiz-btn" data-quiz-index="1">Start Quiz 2</button>
                         </form>
                     </div>
                 </div>
@@ -51,27 +52,34 @@
             <div class="col-md-8">
                 <div class="card mt-5">
                     <div class="card-body">
-                        <h5 class="card-title">Quiz {{ quiz.quizNo }} - {{ quiz.name }}</h5>
-                        {{#each quiz.questions}}
+                        <h5 class="card-title">Quiz {{quizNo}} - {{name}}</h5>
+                        {{#each questions}}
                             <div class="question">
-                                <p>Question {{ num }}:</p>
-                                {{#if type '===' 'multipleChoice'}}
-                                    {{#each choices}}
+                                <p>Question {{@index}}: {{this.question}}</p>
+                                {{#if this.isMultipleChoice}}
+                                    <!-- Render options for a Multiple Choice question -->
+                                    {{#each this.choices}}
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="answer{{../num}}" id="choice{{../num}}-{{@index}}" value="{{this}}">
-                                            <label class="form-check-label" for="choice{{../num}}-{{@index}}">{{this}}</label>
+                                            <input class="form-check-input" type="radio" name="answer{{@../index}}" id="choice{{@../index}}-{{@index}}" value="{{this}}">
+                                            <label class="form-check-label" for="choice{{@../index}}-{{@index}}">{{this}}</label>
                                         </div>
                                     {{/each}}
-                                {{else if type '===' 'imageSelection'}}
-                                    {{#each choices}}
-                                        <img src="{{this}}" alt="Image{{@index}}" class="img-fluid rounded mx-auto d-block mb-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="answer{{../num}}" id="choice{{../num}}-{{@index}}" value="{{this}}">
-                                            <label class="form-check-label" for="choice{{../num}}-{{@index}}">Image{{@index}}</label>
+                                {{/if}}
+                                
+                                {{#if this.isImageSelection}}
+                                    <!-- Render options for an Image Selection question -->
+                                    {{#each this.choices}}
+                                        <div class="image-selection">
+                                            <img src="{{this}}" alt="Image choice {{@index}}" class="img-fluid rounded mx-auto d-block mb-3">
+                                            <input type="radio" name="answer{{@../index}}" id="imageChoice{{@../index}}-{{@index}}" value="{{this}}">
+                                            <label for="imageChoice{{@../index}}-{{@index}}">Image {{@index}}</label>
                                         </div>
                                     {{/each}}
-                                {{else}}
-                                    <textarea class="form-control" name="answer{{num}}" id="answerTextarea{{num}}" rows="3" placeholder="Type your answer"></textarea>
+                                {{/if}}
+                                
+                                {{#if this.isNarrative}}
+                                    <!-- Render a textarea for a Narrative question -->
+                                    <textarea class="form-control" name="answer{{@index}}" id="narrativeAnswer{{@index}}" rows="3" placeholder="Type your answer here"></textarea>
                                 {{/if}}
                             </div>
                         {{/each}}
@@ -80,6 +88,45 @@
                 </div>
             </div>
         </div>
+    </div>
+</script>
+
+<script id="quiz-question-template" type="text/x-handlebars-template">
+    <div class="quiz-question">
+        <h2 class="text-center">Question {{questionIndex}} of {{totalQuestions}}</h2>
+        <p>{{question.question}}</p>
+        
+        {{#if question.isMultipleChoice}}
+        <div>
+            {{#each question.choices as |choice index|}}
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="questionAnswer" id="choice{{index}}" value="{{choice}}">
+                <label class="form-check-label" for="choice{{index}}">{{choice}}</label>
+            </div>
+            {{/each}}
+        </div>
+        {{/if}}
+        
+        {{#if question.isImageSelection}}
+        <div>
+            {{#each question.choices as |choice index|}}
+            <div class="image-selection">
+                <label for="imageChoice{{index}}">
+                    <img src="{{choice}}" alt="Choice {{index}}" class="img-fluid img-thumbnail">
+                    <input type="radio" name="questionAnswer" id="imageChoice{{index}}" value="{{choice}}" class="d-none">
+                </label>
+            </div>
+            {{/each}}
+        </div>
+        {{/if}}
+        
+        {{#if question.isNarrative}}
+        <div>
+            <textarea class="form-control" name="questionAnswer" id="narrativeAnswer" rows="3" placeholder="Type your answer here"></textarea>
+        </div>
+        {{/if}}
+        
+        <button class="btn btn-primary mt-3" id="submitAnswerBtn">Submit Answer</button>
     </div>
 </script>
 
