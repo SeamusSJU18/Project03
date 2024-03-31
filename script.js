@@ -1,117 +1,157 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const appWidget = document.getElementById('app_widget');
-
-
-    renderEnterName();
-
-    async function renderEnterName() {
-        const enterNameTemplateSource = document.getElementById('enter_name').innerHTML;
-        const enterNameTemplate = Handlebars.compile(enterNameTemplateSource);
-        appWidget.innerHTML = enterNameTemplate();
-
-        const nameForm = document.getElementById('name-form');
-        nameForm.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const playerName = document.getElementById('name').value.trim();
-            if (playerName !== '') {
-                const selectedQuiz = await fetchQuiz('https://my-json-server.typicode.com/SeamusSJU18/seamussju18.github.io');
-                renderQuiz(selectedQuiz, playerName);
-            } else {
-                alert('Please enter your name.');
-            }
-        });
-    }
-
-    async function fetchQuiz(baseUrl) {
-        try {
-            const response = await fetch(baseUrl);
-            if (!response.ok) {
-                throw new Error('Failed to fetch quiz');
-            }
-            return await response.json();
-        } catch (error) {
-            console.error('Error fetching quiz:', error);
-        }
-    }
-
-    function renderQuiz(quizData, playerName) {
-    // Compile the Handlebars template
-    const quizTemplateSource = document.getElementById('quiz-template').innerHTML;
-    const quizTemplate = Handlebars.compile(quizTemplateSource);
-
-    // Prepare data to pass to the template
-    const quizContext = {
-        quiz: quizData.Quiz[0], // Assuming you are rendering the first quiz
-        playerName: playerName
-    };
-
-    const quizHtml = quizTemplate(quizContext);
-    const appWidget = document.getElementById('app_widget');
-    appWidget.innerHTML = quizHtml;
-
-}
-    
-    function collectAnswers() {
-        const answers = [];
-        const questions = document.querySelectorAll('.question');
-        questions.forEach((question, index) => {
-            if (question.classList.contains('multipleChoice')) {
-                const selectedOption = question.querySelector('input[type="radio"]:checked');
-                answers.push(selectedOption ? selectedOption.value : '');
-            } else {
-                const answerTextarea = question.querySelector('textarea');
-                answers.push(answerTextarea.value.trim());
-            }
-        });
-        return answers;
-    }
-
-    async function evaluateAnswers(quiz, answers) {
-        let correctAnswers = 0;
-        for (let i = 0; i < quiz.questions.length; i++) {
-            const question = quiz.questions[i];
-            const userAnswer = answers[i];
-            if (question.type === 'multipleChoice' || question.type === 'imageSelection') {
-                if (userAnswer === question.answer) {
-                    correctAnswers++;
-                }
-            } else if (question.type === 'narrative') {
-                if (userAnswer.toLowerCase() === question.answer.toLowerCase()) {
-                    correctAnswers++;
-                }
-            }
-        }
-        return Math.round((correctAnswers / quiz.questions.length) * 100);
-    }
-
-    function renderFeedback(score, playerName) {
-        const feedbackTemplateSource = document.getElementById('feedback-template').innerHTML;
-        const feedbackTemplate = Handlebars.compile(feedbackTemplateSource);
-        const correct = score >= 80;
-        const correctAnswer = correct ? '' : getCorrectAnswers();
-        appWidget.innerHTML = feedbackTemplate({ correct, correctAnswer });
-
-        if (!correct) {
-            const gotItBtn = document.getElementById('gotItBtn');
-            gotItBtn.addEventListener('click', () => {
-                const selectedQuiz = fetchQuiz('https://my-json-server.typicode.com/yourusername/yourrepositoryname/Quiz/1'); // Change the quiz number and URL as needed
-                renderQuiz(selectedQuiz, playerName);
-            });
-        } else {
-            setTimeout(() => {
-                const selectedQuiz = fetchQuiz('https://my-json-server.typicode.com/yourusername/yourrepositoryname/Quiz/1'); // Change the quiz number and URL as needed
-                renderQuiz(selectedQuiz, playerName);
-            }, 1000);
-        }
-    }
-
-    function getCorrectAnswers() {
-        const questions = document.querySelectorAll('.question');
-        const correctAnswers = [];
-        questions.forEach((question, index) => {
-            const correctAnswer = question.querySelector('input[type="radio"][value]').value;
-            correctAnswers.push(correctAnswer);
-        });
-        return correctAnswers;
-    }
+    fetchQuizData()
+        .then(() => showEnterNameView())
+        .catch(error => console.error('Error fetching quiz data:', error));
 });
+
+let playerName = "";
+let currentQuizIndex = -1;
+let currentQuestionIndex = 0;
+let totalQuestionsAnswered = 0;
+let correctAnswers = 0;
+let startTime;
+let quizData;
+
+async function fetchQuizData() {
+    try {
+        const response = await fetch('https://my-json-server.typicode.com/SeamusSJU18/seamussju18.github.io/db');
+        quizData = await response.json();
+        
+        quizData.Quiz.forEach(quiz => {
+            quiz.questions.forEach(question => {
+                question.isMultipleChoice = question.type === 'multipleChoice';
+                question.isImageSelection = question.type === 'imageSelection';
+                question.isNarrative = question.type === 'narrative';
+            });
+        });
+    } catch (error) {
+        console.error('Error fetching quiz data:', error);
+    }
+}
+async function showEnterNameView() {
+    const enterNameTemplate = Handlebars.compile(document.getElementById('enter_name').innerHTML);
+    document.getElementById('app_widget').innerHTML = enterNameTemplate();
+
+    const startQuizButtons = document.querySelectorAll('.start-quiz-btn');
+
+    startQuizButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            playerName = document.getElementById('name').value.trim();
+            if (playerName === '') {
+                alert('Please enter your name');
+                return;
+            }
+            currentQuizIndex = parseInt(this.getAttribute('data-quiz-index'));
+            startQuiz(currentQuizIndex);
+        });
+    });
+    return false;
+}
+async function startQuiz(selectedQuizIndex) {
+    currentQuizIndex = selectedQuizIndex; 
+    const selectedQuiz = quizData.Quiz[selectedQuizIndex];
+    document.getElementById('app_widget').innerHTML = `<h3>${selectedQuiz.name}</h3>`;
+
+    startTime = Date.now();
+
+    renderQuestion();
+}
+function renderQuestion() {
+    
+    if (currentQuestionIndex < quizData.Quiz[currentQuizIndex].questions.length) {
+        
+        const question = quizData.Quiz[currentQuizIndex].questions[currentQuestionIndex];
+
+       
+        const questionTemplate = Handlebars.compile(document.getElementById('quiz-question-template').innerHTML);
+        
+        
+        document.getElementById('app_widget').innerHTML = questionTemplate({
+            questionIndex: currentQuestionIndex + 1,
+            totalQuestions: quizData.Quiz[currentQuizIndex].questions.length,
+            question: question,
+        });
+
+        
+        document.getElementById('submitAnswerBtn').addEventListener('click', function() {
+            
+            submitAnswer();
+        });
+
+    } else {
+       
+        showScoreboard();
+    }
+}
+function submitAnswer() {
+    const question = quizData.Quiz[currentQuizIndex].questions[currentQuestionIndex];
+
+    let userAnswer;
+    if (question.isMultipleChoice || question.isImageSelection) {
+        const selectedOption = document.querySelector('input[name="questionAnswer"]:checked');
+        userAnswer = selectedOption ? selectedOption.value : null;
+    } else if (question.isNarrative) {
+        userAnswer = document.getElementById('narrativeAnswer').value;
+    }
+
+    if (userAnswer && userAnswer === question.answer) {
+        correctAnswers++; // Correct answer handling
+    }
+
+    currentQuestionIndex++;
+
+    if (currentQuestionIndex < quizData.Quiz[currentQuizIndex].questions.length) {
+        renderQuestion();
+    } else {
+        
+        showScoreboard();
+    }
+}
+
+async function displayFeedback(userAnswers) {
+    const quiz = quizData.Quiz[currentQuizIndex]; // Access quiz data from quizData
+    const feedbackTemplate = Handlebars.compile(document.getElementById('feedback-template').innerHTML);
+    let correct = 0;
+    userAnswers.forEach((answer, index) => {
+        const question = quiz.questions[index];
+        if (answer === question.answer) {
+            correct++;
+        }
+    });
+    correctAnswers += correct;
+    totalQuestionsAnswered += quiz.questions.length;
+    document.getElementById('app_widget').innerHTML = feedbackTemplate({ correct: correct });
+    if (correct < quiz.questions.length) {
+        const correctAnswer = quiz.questions[currentQuestionIndex].answer;
+        document.querySelector('.card-text').textContent += ` The correct answer is: ${correctAnswer}.`;
+        document.getElementById('gotItBtn').addEventListener('click', () => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quiz.questions.length) {
+                renderQuestion();
+            } else {
+                showScoreboard();
+            }
+        });
+    } else {
+        setTimeout(() => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quiz.questions.length) {
+                renderQuestion();
+            } else {
+                showScoreboard();
+            }
+        }, 1000);
+    }
+}
+
+function showScoreboard() {
+    const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(2);
+    const totalScore = ((correctAnswers / totalQuestionsAnswered) * 100).toFixed(2);
+    const scoreboardTemplate = Handlebars.compile(document.getElementById('scoreboard-template').innerHTML);
+    document.getElementById('app_widget').innerHTML = scoreboardTemplate({
+        playerName: playerName,
+        questionsAnswered: totalQuestionsAnswered,
+        elapsedTime: elapsedTime,
+        totalScore: totalScore
+    });
+}
