@@ -97,10 +97,10 @@ function submitAnswer() {
     let feedbackMessage;
     if (userAnswer && userAnswer === question.answer) {
         correctAnswers++;
-        totalQuestionsAnswered;
+        totalQuestionsAnswered++;
         feedbackMessage = "Correct! Nice job!"; 
     } else {
-        totalQuestionsAnswered;
+        totalQuestionsAnswered++;
         feedbackMessage = `Wrong. The correct answer is: ${question.answer}.`; 
     }
 
