@@ -1,3 +1,11 @@
 body {
   background-color: yellow
 }
+
+.screen {
+  color: red
+}
+
+#app_widget {
+  color: blue
+}
