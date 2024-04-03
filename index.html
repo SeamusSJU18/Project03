@@ -157,7 +157,23 @@
                         <h5 class="card-title">Scoreboard</h5>
                         <p class="card-text">Name: {{ playerName }}</p>
                         <p class="card-text">Correct: {{ correctAnswers }}</p>
-                        <p class="card-text">Total score: {{ score }}</p>
+                        <p class="card-text">Score: {{ score }}</p>
+                        <button id="nextBtn" class="btn btn-primary">Next</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script id="pass-fail" class="screen" type="text/x-handlebars-template">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card mt-5">
+                    <div class="card-body">
+                        <h5 class="card-title">Result</h5>
+                        <p class="card-text">{{ passfail }}</p>
                     </div>
                 </div>
             </div>
