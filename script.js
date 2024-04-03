@@ -9,7 +9,7 @@ let currentQuizIndex = -1;
 let currentQuestionIndex = 0;
 let totalQuestionsAnswered = 0;
 let correctAnswers = 0;
-let startTime;
+let grade;
 let quizData;
 
 async function fetchQuizData() {
@@ -29,14 +29,14 @@ async function fetchQuizData() {
     }
 }
 async function showEnterNameView() {
-    const enterNameTemplate = Handlebars.compile(document.getElementById('enter_name').innerHTML);
-    document.getElementById('app_widget').innerHTML = enterNameTemplate();
+    const enterNameTemplate = Handlebars.compile(document.querySelector('#enter_name').innerHTML);
+    document.querySelector('#app_widget').innerHTML = enterNameTemplate();
 
     const startQuizButtons = document.querySelectorAll('.start-quiz-btn');
 
     startQuizButtons.forEach(button => {
         button.addEventListener('click', function(event) {
-            playerName = document.getElementById('name').value.trim();
+            playerName = document.querySelector('#name').value.trim();
             if (playerName === '') {
                 alert('Please enter your name');
                 return;
@@ -50,7 +50,7 @@ async function showEnterNameView() {
 async function startQuiz(selectedQuizIndex) {
     currentQuizIndex = selectedQuizIndex; 
     const selectedQuiz = quizData.Quiz[selectedQuizIndex];
-    document.getElementById('app_widget').innerHTML = `<h3>${selectedQuiz.name}</h3>`;
+    document.querySelector('#app_widget').innerHTML = `<h3>${selectedQuiz.name}</h3>`;
 
     startTime = Date.now();
 
@@ -63,17 +63,17 @@ function renderQuestion() {
         const question = quizData.Quiz[currentQuizIndex].questions[currentQuestionIndex];
 
        
-        const questionTemplate = Handlebars.compile(document.getElementById('quiz-question-template').innerHTML);
+        const questionTemplate = Handlebars.compile(document.querySelector('#quiz-question-template').innerHTML);
         
         
-        document.getElementById('app_widget').innerHTML = questionTemplate({
+        document.querySelector('#app_widget').innerHTML = questionTemplate({
             questionIndex: currentQuestionIndex + 1,
             totalQuestions: quizData.Quiz[currentQuizIndex].questions.length,
             question: question,
         });
 
         
-        document.getElementById('submitAnswerBtn').addEventListener('click', function() {
+        document.querySelector('#submitAnswerBtn').addEventListener('click', function() {
             
             submitAnswer();
         });
@@ -91,7 +91,7 @@ function submitAnswer() {
         const selectedOption = document.querySelector('input[name="questionAnswer"]:checked');
         userAnswer = selectedOption ? selectedOption.value : null;
     } else if (question.isNarrative) {
-        userAnswer = document.getElementById('narrativeAnswer').value;
+        userAnswer = document.querySelector('#narrativeAnswer').value;
     }
 
     let feedbackMessage;
@@ -105,7 +105,7 @@ function submitAnswer() {
     }
 
     
-    document.getElementById('app_widget').innerHTML = `<div class='feedback'>${feedbackMessage}</div>`;
+    document.querySelector('#app_widget').innerHTML = `<div class='feedback'>${feedbackMessage}</div>`;
 
     
     setTimeout(() => {
@@ -118,11 +118,29 @@ function submitAnswer() {
     }, 1000); 
 }
 function showScoreboard() {
-    const score = ((correctAnswers / totalQuestionsAnswered) * 100);
-    const scoreboardTemplate = Handlebars.compile(document.getElementById('scoreboard-template').innerHTML);
-    document.getElementById('app_widget').innerHTML = scoreboardTemplate({
+    grade = ((correctAnswers / totalQuestionsAnswered) * 100);
+    const scoreboardTemplate = Handlebars.compile(document.querySelector('#scoreboard-template').innerHTML);
+    document.querySelector('#app_widget').innerHTML = scoreboardTemplate({
         playerName: playerName,
         correctAnswers: correctAnswers,
-        score: score
+        score: grade
+    });
+    
+    document.querySelector('#nextBtn').addEventListener('click', function() {
+        showResult();
+    });
+}
+
+function showResult() {
+    let result;
+    if (grade >= 80) {
+        result = `Congratulations ${playerName}! You pass the quiz.`;
+    } else {
+        result = `Sorry ${playerName}, you fail the quiz.`;
+    }
+
+    const resultTemplate = Handlebars.compile(document.querySelector('#pass-fail').innerHTML);
+    document.querySelector('#app_widget').innerHTML = resultTemplate({
+        passfail: result
     });
 }
