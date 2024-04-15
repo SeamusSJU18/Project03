@@ -94,20 +94,29 @@ function submitAnswer() {
         userAnswer = document.querySelector('#narrativeAnswer').value;
     }
 
-    let feedbackMessage;
+    let feedbackMessage; 
+    let bgcolor;
+    let co;
     if (userAnswer && userAnswer === question.answer) {
         correctAnswers++;
         totalQuestionsAnswered++;
-        feedbackMessage = "Correct! Nice job!"; 
+        feedbackMessage = "Correct! Nice job!";
+        bgcolor = 'green';
+        co = 'white';
     } else {
         totalQuestionsAnswered++;
-        feedbackMessage = `Wrong. The correct answer is: ${question.answer}.`; 
+        feedbackMessage = `Wrong. The correct answer is: ${question.answer}.`;
+        bgcolor = 'red';
+        co = 'white';
     }
 
-    
-    document.querySelector('#app_widget').innerHTML = `<div class='feedback'>${feedbackMessage}</div>`;
+    const feedbackTemplate = Handlebars.compile(document.querySelector('#feedback').innerHTML);
+    document.querySelector('#app_widget').innerHTML = feedbackTemplate({
+        feedback: feedbackMessage,
+        bgcolor: bgcolor,
+        co: co
+    });
 
-    
     setTimeout(() => {
         currentQuestionIndex++;
         if (currentQuestionIndex < quizData.Quiz[currentQuizIndex].questions.length) {
@@ -115,7 +124,7 @@ function submitAnswer() {
         } else {
             showScoreboard();
         }
-    }, 1000); 
+    }, 1000);
 }
 function showScoreboard() {
     grade = ((correctAnswers / totalQuestionsAnswered) * 100);
